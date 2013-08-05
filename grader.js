@@ -21,11 +21,22 @@ References:
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
 */
 
+var rest = require('restler');
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URLFILE_DEFAULT = "url.txt";
+
+var writeToFile = function (result) {
+    fs.writeFileSync('url.txt', result);
+};
+    
+var getHtml = function(url) {
+    rest.get(url).on('complete', writeToFile);
+    return assertFileExists('url.txt')
+};
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -65,8 +76,13 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url <url>', 'URL for HTML source', clone(getHtml), URLFILE_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+    if (program.file) {
+	var checkJson = checkHtmlFile(program.file, program.checks);
+    } else if (program.url) {
+	var checkJson = checkHtmlFile(program.url, program.checks);
+    }
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
